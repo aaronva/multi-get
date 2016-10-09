@@ -6,8 +6,8 @@ var fs = require('fs');
 //
 //});
 
-const numChunk = 4;
-const chunkSize = 1048576;
+const numChunk = 40;
+const chunkSize = 1024; //1048576;
 
 //const urlStr = "http://dist.pravala.com/coding/multiGet-example.zip";
 const urlStr = "http://www.textfiles.com/rpg/bagofwonder.txt";
@@ -21,6 +21,8 @@ fs.open(outputFile, "w", (err, fd0) => {
 });
 
 const url = require('url').parse(urlStr);
+var excessChunks = 0;
+var successChunks = 0;
 
 function requestPart (i) {
     var offset = i * chunkSize;
@@ -29,25 +31,27 @@ function requestPart (i) {
         hostname: url.hostname,
         path: url.path,
         headers: {
-            'Range':`bytes=${start}-${end}`
+            'Range':`bytes=${offset}-${last}`
         }
     }, (res) => {
         if (res.statusCode === 206) {
+            successChunks++;
             var data = "";
 
             res.on('data', (chunk) => {
-                console.log(`Reading chunk from offset ${offset}`);
                 data += chunk;
             });
     
             res.on('end', () => {
-                console.log(`Writing data at offset ${offset}`);
+                //console.log(`Writing data at offset ${offset}`);
 
                 // TODO make sure fd is set.
 
                 // Using sync here to avoid writing to the file in multiple places simulatiously
                 fs.writeSync(fd, data, offset);
             });
+        } else if (res.statusCode === 416) {
+            excessChunks++;
         } else {
             console.log(`Got unexpected status: ${res.statusCode}`);
         }
@@ -61,7 +65,8 @@ for (var i = 0; i < numChunk; i++) {
 }
 
 function exitHandler() {
-    fs.closeSync(fd);   
+    fs.closeSync(fd);
+    console.log(`Downloaded ${successChunks} ${chunkSize}-byte chunks successfully with an addtional ${excessChunks} excess chunks`);
 };
 
 process.on('exit', exitHandler);
