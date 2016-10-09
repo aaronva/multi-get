@@ -6,7 +6,7 @@ var fs = require('fs');
 //
 //});
 
-const numChunk = 40;
+const numChunks = 40;
 const chunkSize = 1024; //1048576;
 
 //const urlStr = "http://dist.pravala.com/coding/multiGet-example.zip";
@@ -55,18 +55,22 @@ function requestPart (i) {
         } else {
             console.log(`Got unexpected status: ${res.statusCode}`);
         }
+        process.stdout.write(`Downloaded ${successChunks + excessChunks}/${numChunks} chunks \r`);
     }).on('error', (e) => {
           console.log(`Got error: ${e.message}`);
     });
 }
 
-for (var i = 0; i < numChunk; i++) {
+for (var i = 0; i < numChunks; i++) {
     requestPart(i);
 }
 
 function exitHandler() {
+    process.stdout.write('\n');
+    console.log(`File writen. There were ${excessChunks} excess chunks.`);
     fs.closeSync(fd);
-    console.log(`Downloaded ${successChunks} ${chunkSize}-byte chunks successfully with an addtional ${excessChunks} excess chunks`);
-};
+
+}
 
 process.on('exit', exitHandler);
+
