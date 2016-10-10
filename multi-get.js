@@ -1,20 +1,19 @@
+//const urlStr = "http://dist.pravala.com/coding/multiGet-example.zip";
+//const urlStr = "http://www.textfiles.com/rpg/bagofwonder.txt";
+
 var http = require('http');
 var fs = require('fs');
 
 function invalidUsage() {
-    process.stdout.write("Usage: node mutli-get.js <url>\n");
+    process.stdout.write("Usage: node mutli-get.js <url> [filename=out] [number=4] [size=1048576]\n");
     process.exit();
 }
 
-const numChunks = 40;
-const chunkSize = 1024; //1048576;
-
-//const urlStr = "http://dist.pravala.com/coding/multiGet-example.zip";
-//const urlStr = "http://www.textfiles.com/rpg/bagofwonder.txt";
-
 const urlStr = process.argv[2];
-const outputFile = "test"
+const outputFile = process.argv[3] || "out";
 
+const numChunks = process.argv[4] || 4;
+const chunkSize = process.argv[5] || 1048576;
 
 if (!urlStr || urlStr === "--help" || urlStr === "-h")
     invalidUsage();
@@ -43,6 +42,7 @@ function requestPart (i) {
     }, (res) => {
         if (res.statusCode === 206) {
             successChunks++;
+            process.stdout.write(`Downloaded ${successChunks + excessChunks}/${numChunks} chunks \r`);
             var data = "";
 
             res.on('data', (chunk) => {
@@ -57,10 +57,10 @@ function requestPart (i) {
             });
         } else if (res.statusCode === 416) {
             excessChunks++;
+            process.stdout.write(`Downloaded ${successChunks + excessChunks}/${numChunks} chunks \r`);
         } else {
             process.stdout.write(`Got unexpected status: ${res.statusCode}\n`);
         }
-        process.stdout.write(`Downloaded ${successChunks + excessChunks}/${numChunks} chunks \r`);
     }).on('error', (e) => {
         process.stdout.write(`Got error: ${e.message}\n`);
     });
