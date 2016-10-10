@@ -1,14 +1,10 @@
-# TODO
-
-1. Make good README
-
 # Basic Usage
 
-node mutli-get.js <url> [filename=out] [num=4] [size=1048576]
+`node mutli-get.js <url> [filename=out] [num=4] [size=1048576]`
 
-num and size must be positive non-zero integers
+`num` and `size` must be positive non-zero integers
 
-To avoid sending too many requests to the server, num must be below 1000.
+To avoid sending too many requests to the server, `num` must be below 1000.
 
 # Files
 
