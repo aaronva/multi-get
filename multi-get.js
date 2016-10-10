@@ -20,6 +20,7 @@ if (!urlStr || urlStr === "--help" || urlStr === "-h")
 
 var fd;
 fs.open(outputFile, "w", (err, fd0) => {
+    // TODO consider very unlikely edge case where this doesn't load in time
     if (err) process.stderr.write(err + '\n');
     fd = fd0;
     process.stdout.write("Opened file for writing\n");
@@ -40,20 +41,16 @@ function requestPart (i) {
             'Range':`bytes=${offset}-${last}`
         }
     }, (res) => {
-        if (res.statusCode === 206) {
+        if (res.statusCode === 206) { // Partial content status code
             successChunks++;
             process.stdout.write(`Downloaded ${successChunks + excessChunks}/${numChunks} chunks \r`);
-            var data = "";
+            var data = new Buffer(chunkSize);
+            var innerChunkOffset = 0;
 
             res.on('data', (chunk) => {
-                data += chunk;
-            });
-    
-            res.on('end', () => {
-                // TODO make sure fd is set.
-
-                // Using sync here to avoid writing to the file in multiple places simulatiously
-                fs.writeSync(fd, data, offset);
+                // Using sync here to avoid writing to multiple positions at the same time.
+                fs.writeSync(fd, chunk, 0, chunk.length, offset + innerChunkOffset);
+                innerChunkOffset += chunk.length; 
             });
         } else if (res.statusCode === 416) {
             excessChunks++;
@@ -72,7 +69,7 @@ for (var i = 0; i < numChunks; i++) {
 
 function exitHandler() {
     process.stdout.write('\n');
-    process.stdout.write(`File writen. There were ${excessChunks} excess chunks.\n`);
+    process.stdout.write(`There were ${excessChunks} excess chunks.\n`);
     
     if (fd)
         fs.closeSync(fd);
