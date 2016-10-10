@@ -1,26 +1,33 @@
 var http = require('http');
 var fs = require('fs');
 
-//process.argv.forEach((val, index) => {
-//    console.log(`${index}: ${val}`);
-//
-//});
+function invalidUsage() {
+    process.stdout.write("Usage: node mutli-get.js <url>\n");
+    process.exit();
+}
 
 const numChunks = 40;
 const chunkSize = 1024; //1048576;
 
 //const urlStr = "http://dist.pravala.com/coding/multiGet-example.zip";
-const urlStr = "http://www.textfiles.com/rpg/bagofwonder.txt";
+//const urlStr = "http://www.textfiles.com/rpg/bagofwonder.txt";
+
+const urlStr = process.argv[2];
 const outputFile = "test"
+
+
+if (!urlStr || urlStr === "--help" || urlStr === "-h")
+    invalidUsage();
 
 var fd;
 fs.open(outputFile, "w", (err, fd0) => {
-    if (err) console.error(err);
+    if (err) process.stderr.write(err + '\n');
     fd = fd0;
-    console.log("Opened file for writing");
+    process.stdout.write("Opened file for writing\n");
 });
 
 const url = require('url').parse(urlStr);
+
 var excessChunks = 0;
 var successChunks = 0;
 
@@ -43,8 +50,6 @@ function requestPart (i) {
             });
     
             res.on('end', () => {
-                //console.log(`Writing data at offset ${offset}`);
-
                 // TODO make sure fd is set.
 
                 // Using sync here to avoid writing to the file in multiple places simulatiously
@@ -53,11 +58,11 @@ function requestPart (i) {
         } else if (res.statusCode === 416) {
             excessChunks++;
         } else {
-            console.log(`Got unexpected status: ${res.statusCode}`);
+            process.stdout.write(`Got unexpected status: ${res.statusCode}\n`);
         }
         process.stdout.write(`Downloaded ${successChunks + excessChunks}/${numChunks} chunks \r`);
     }).on('error', (e) => {
-          console.log(`Got error: ${e.message}`);
+        process.stdout.write(`Got error: ${e.message}\n`);
     });
 }
 
@@ -67,10 +72,10 @@ for (var i = 0; i < numChunks; i++) {
 
 function exitHandler() {
     process.stdout.write('\n');
-    console.log(`File writen. There were ${excessChunks} excess chunks.`);
-    fs.closeSync(fd);
-
+    process.stdout.write(`File writen. There were ${excessChunks} excess chunks.\n`);
+    
+    if (fd)
+        fs.closeSync(fd);
 }
 
 process.on('exit', exitHandler);
-
